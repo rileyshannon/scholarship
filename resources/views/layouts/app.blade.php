@@ -2,4 +2,8 @@
     <flux:main>
         {{ $slot }}
     </flux:main>
+
+    @persist('toasts')
+        <flux:toast />
+    @endpersist
 </x-layouts::app.sidebar>

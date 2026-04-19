@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('employment_histories', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('scholarship_application_id')->constrained('scholarship_applications');
+            $table->string('employer_name');
+            $table->string('position');
+            $table->string('length');
             $table->timestamps();
         });
     }

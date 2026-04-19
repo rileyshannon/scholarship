@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('scholarship_application_grader', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->foreignUlid('scholarship_application_id')->constrained('scholarship_applications');
+            $table->foreignUlid('user_id')->constrained('users');
+            $table->timestamp('assigned_at')->useCurrent();
+            $table->primary(['scholarship_application_id', 'user_id']);
         });
     }
 

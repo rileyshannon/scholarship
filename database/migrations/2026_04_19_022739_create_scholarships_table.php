@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('scholarships', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
+            $table->string('name');
+            $table->timestamp('opens_at');
+            $table->timestamp('closes_at');
+            $table->boolean('is_active')->default(false);
             $table->timestamps();
         });
     }
