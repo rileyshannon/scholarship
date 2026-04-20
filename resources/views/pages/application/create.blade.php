@@ -1,9 +1,11 @@
 <?php
 
 use App\Actions\SubmitApplication;
-use App\Enums\{EducationLevel, FlightInstruction, FlightTraining, Gender, Gpa, Reference, State};
-use Livewire\Component;
+use App\Enums\{EducationLevel, FlightInstruction, FlightTraining, Gender, Gpa};
+use App\Models\Scholarship;
 use Flux\Flux;
+use Livewire\Attributes\Computed;
+use Livewire\Component;
 
 new class extends Component {
     public int $step = 1;
@@ -106,7 +108,7 @@ new class extends Component {
 
     public function nextStep(): void
     {
-        $this->validate($this->stepRules()[$this->step]);
+//        $this->validate($this->stepRules()[$this->step]);
         $this->step++;
     }
 
@@ -173,6 +175,19 @@ new class extends Component {
         $this->redirectRoute('application.success', navigate: true);
     }
 
+    #[Computed]
+    public function scholarship(): ?Scholarship
+    {
+        return Scholarship::where('is_active', true)->first();
+    }
+
+    public function mount(): void
+    {
+        if (!$this->scholarship) {
+            $this->redirect(route('index'), navigate: true);
+        }
+    }
+
     public function render()
     {
         return $this->view()->layout('layouts::guest');
@@ -181,6 +196,7 @@ new class extends Component {
 ?>
 
 <div>
+    @if(now()->isBetween($this->scholarship->opens_at, $this->scholarship->closes_at))
     <div class="mb-8">
         <flux:progress :value="($step / $totalSteps) * 100" color="cyan"/>
     </div>
@@ -203,13 +219,15 @@ new class extends Component {
                         <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
-                <flux:switch wire:model.live="ppot_member" label="Are you currently a PPOT Member?" align="left" />
+                <flux:switch wire:model.live="ppot_member" label="Are you currently a PPOT Member?" align="left"/>
 
                 @if($ppot_member)
-                    <flux:input wire:model="ppot_mentor" label="Who is your mentor?" description="If you do not have a mentor, please write N/A." />
+                    <flux:input wire:model="ppot_mentor" label="Who is your mentor?"
+                                description="If you do not have a mentor, please write N/A."/>
                 @endif
 
-                <flux:switch wire:model="prior_applicant" label="Have you applied for a PPOT Scholarship in the past?" align="left" />
+                <flux:switch wire:model="prior_applicant" label="Have you applied for a PPOT Scholarship in the past?"
+                             align="left"/>
 
                 <flux:select wire:model="reference" label="How did you hear about this scholarship?">
                     @foreach(\App\Enums\Reference::cases() as $option)
@@ -218,120 +236,139 @@ new class extends Component {
                 </flux:select>
             </div>
         @endif
-            @if($step === 2)
-                <div class="space-y-6">
-                    <flux:select wire:model="flight_school" label="Flight School">
-{{--                        @foreach(\App\Enums\FlightSchool::cases() as $option)--}}
+        @if($step === 2)
+            <div class="space-y-6">
+                <flux:select wire:model="flight_school" label="Flight School">
+                    {{--                        @foreach(\App\Enums\FlightSchool::cases() as $option)--}}
+                    {{--                            <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>--}}
+                    {{--                        @endforeach--}}
+                </flux:select>
+                <flux:select wire:model="flight_training" label="Highest Level of Flight Training Completed">
+                    @foreach(FlightTraining::cases() as $option)
+                        <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:select wire:model="total_time" label="Total Flight Time (excluding simulator time)">
+                    {{--                        @foreach(\App\Enums\FlightTime::cases() as $option)--}}
+                    {{--                            <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>--}}
+                    {{--                        @endforeach--}}
+                </flux:select>
+                <flux:select wire:model="flight_instruction" label="Recent Flight Instruction Received or Given"
+                             description="If you have earned a flight certificate or rating in the previous 6 or 12 months, please select that option.">
+                    @foreach(FlightInstruction::cases() as $option)
+                        <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </div>
+        @endif
+
+        {{-- Step 3: Education --}}
+        @if($step === 3)
+            <div class="space-y-6">
+                <flux:select wire:model="education_level" label="Highest Level of Education Completed">
+                    @foreach(EducationLevel::cases() as $option)
+                        <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:input wire:model="school" label="School Name"/>
+                <div class="grid grid-cols-2 gap-4">
+                    <flux:select wire:model="graduation_month" label="Graduation Month">
+{{--                        @foreach(\App\Enums\Month::cases() as $option)--}}
 {{--                            <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>--}}
 {{--                        @endforeach--}}
                     </flux:select>
-                    <flux:select wire:model="flight_training" label="Highest Level of Flight Training Completed">
-                        @foreach(FlightTraining::cases() as $option)
-                            <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                    <flux:select wire:model="total_time" label="Total Flight Time (excluding simulator time)">
-{{--                        @foreach(\App\Enums\FlightTime::cases() as $option)--}}
-{{--                            <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>--}}
-{{--                        @endforeach--}}
-                    </flux:select>
-                    <flux:select wire:model="flight_instruction" label="Recent Flight Instruction Received or Given" description="If you have earned a flight certificate or rating in the previous 6 or 12 months, please select that option.">
-                        @foreach(FlightInstruction::cases() as $option)
-                            <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
+                    <flux:select wire:model="graduation_year" label="Graduation Year">
+                        @foreach(range(date('Y') + 8, 1980) as $year)
+                            <flux:select.option value="{{ $year }}">{{ $year }}</flux:select.option>
                         @endforeach
                     </flux:select>
                 </div>
-            @endif
+                <flux:select wire:model="gpa" label="Most Recent Cumulative GPA (4.0 scale)">
+                    @foreach(Gpa::cases() as $option)
+                        <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+                <flux:textarea wire:model="academics" label="Academic Honors & Scholarships"
+                               description="If you do not have any information to fill in, please write N/A." rows="4"/>
+            </div>
+        @endif
 
-            {{-- Step 3: Education --}}
-            @if($step === 3)
-                <div class="space-y-6">
-                    <flux:select wire:model="education_level" label="Highest Level of Education Completed">
-                        @foreach(EducationLevel::cases() as $option)
-                            <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                    <flux:input wire:model="school" label="School Name" />
-                    <div class="grid grid-cols-2 gap-4">
-                        <flux:select wire:model="graduation_month" label="Graduation Month">
-                            @foreach(\App\Enums\Month::cases() as $option)
-                                <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                        <flux:select wire:model="graduation_year" label="Graduation Year">
-                            @foreach(range(date('Y') + 8, 1980) as $year)
-                                <flux:select.option value="{{ $year }}">{{ $year }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                    </div>
-                    <flux:select wire:model="gpa" label="Most Recent Cumulative GPA (4.0 scale)">
-                        @foreach(Gpa::cases() as $option)
-                            <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
-                    <flux:textarea wire:model="academics" label="Academic Honors & Scholarships" description="If you do not have any information to fill in, please write N/A." rows="4" />
-                </div>
-            @endif
+        {{-- Step 4: Goals & Awards --}}
+        @if($step === 4)
+            <div class="space-y-6">
+                <flux:textarea wire:model="short_term_goal" label="Short Term Aviation Goal (next 12 months)"
+                               description="If undecided or not applicable please write N/A." rows="4"/>
+                <flux:textarea wire:model="long_term_goal" label="Long Term Aviation Goal (next 10-20 years)"
+                               description="If undecided or not applicable please write N/A." rows="4"/>
+                <flux:switch wire:model.live="has_received_awards"
+                             label="Have you ever received any aviation related awards?"
+                             description="Ex: WAI/NGPA/OBAP/LPA Scholarships, Safety Awards, Flight School or Flight Team Awards, or Similar"/>
+                @if($has_received_awards)
+                    <flux:textarea wire:model="received_awards" label="Please list and describe your aviation award(s)"
+                                   rows="4"/>
+                @endif
+            </div>
+        @endif
 
-            {{-- Step 4: Goals & Awards --}}
-            @if($step === 4)
-                <div class="space-y-6">
-                    <flux:textarea wire:model="short_term_goal" label="Short Term Aviation Goal (next 12 months)" description="If undecided or not applicable please write N/A." rows="4" />
-                    <flux:textarea wire:model="long_term_goal" label="Long Term Aviation Goal (next 10-20 years)" description="If undecided or not applicable please write N/A." rows="4" />
-                    <flux:switch wire:model.live="has_received_awards" label="Have you ever received any aviation related awards?" description="Ex: WAI/NGPA/OBAP/LPA Scholarships, Safety Awards, Flight School or Flight Team Awards, or Similar" />
-                    @if($has_received_awards)
-                        <flux:textarea wire:model="received_awards" label="Please list and describe your aviation award(s)" rows="4" />
+        {{-- Step 5: Community & Employment --}}
+        @if($step === 5)
+            <div class="space-y-6">
+                <flux:textarea wire:model="other_organizations" label="Other Professional or Aviation Organizations"
+                               description="If you do not have any information to fill in, please write N/A." rows="4"/>
+                <flux:textarea wire:model="volunteer_events" label="Recent Volunteer Events (previous five years)"
+                               description="If you do not have any information to fill in, please write N/A." rows="4"/>
+
+                <div class="space-y-4">
+                    <flux:heading size="sm">Employment History</flux:heading>
+                    @foreach($employment_histories as $index => $employment)
+                        <div class="grid grid-cols-3 gap-4 items-end">
+                            <flux:input wire:model="employment_histories.{{ $index }}.employer_name"
+                                        label="Employer Name"/>
+                            <flux:input wire:model="employment_histories.{{ $index }}.position" label="Position"/>
+                            <flux:select wire:model="employment_histories.{{ $index }}.length" label="Length">
+{{--                                @foreach(\App\Enums\EmploymentLength::cases() as $option)--}}
+{{--                                    <flux:select.option--}}
+{{--                                        value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>--}}
+{{--                                @endforeach--}}
+                            </flux:select>
+                            @if($index > 0)
+                                <div class="col-span-3 flex justify-end">
+                                    <flux:button wire:click="removeEmployment({{ $index }})" variant="ghost" size="sm">
+                                        Remove
+                                    </flux:button>
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                    @if(count($employment_histories) < 5)
+                        <flux:button wire:click="addEmployment" variant="ghost" size="sm">+ Add Employment</flux:button>
                     @endif
                 </div>
-            @endif
 
-            {{-- Step 5: Community & Employment --}}
-            @if($step === 5)
-                <div class="space-y-6">
-                    <flux:textarea wire:model="other_organizations" label="Other Professional or Aviation Organizations" description="If you do not have any information to fill in, please write N/A." rows="4" />
-                    <flux:textarea wire:model="volunteer_events" label="Recent Volunteer Events (previous five years)" description="If you do not have any information to fill in, please write N/A." rows="4" />
+                <flux:textarea wire:model="career_aspirations" label="Career Progression & Aspirations" rows="4"/>
+            </div>
+        @endif
 
-                    <div class="space-y-4">
-                        <flux:heading size="sm">Employment History</flux:heading>
-                        @foreach($employment_histories as $index => $employment)
-                            <div class="grid grid-cols-3 gap-4 items-end">
-                                <flux:input wire:model="employment_histories.{{ $index }}.employer_name" label="Employer Name" />
-                                <flux:input wire:model="employment_histories.{{ $index }}.position" label="Position" />
-                                <flux:select wire:model="employment_histories.{{ $index }}.length" label="Length">
-                                    @foreach(\App\Enums\EmploymentLength::cases() as $option)
-                                        <flux:select.option value="{{ $option->value }}">{{ $option->label() }}</flux:select.option>
-                                    @endforeach
-                                </flux:select>
-                                @if($index > 0)
-                                    <div class="col-span-3 flex justify-end">
-                                        <flux:button wire:click="removeEmployment({{ $index }})" variant="ghost" size="sm">Remove</flux:button>
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
-                        @if(count($employment_histories) < 5)
-                            <flux:button wire:click="addEmployment" variant="ghost" size="sm">+ Add Employment</flux:button>
-                        @endif
-                    </div>
+        {{-- Step 6: Essays --}}
+        @if($step === 6)
+            <div class="space-y-6">
+                <flux:textarea wire:model="essay_one" label="Essay One"
+                               description="In 500 words or less, please describe why you believe you should be selected as one of our scholarship recipients."
+                               rows="10"/>
+                <flux:textarea wire:model="essay_two" label="Essay Two"
+                               description="In 500 words or less, please describe what being a good mentee or mentor means to you."
+                               rows="10"/>
 
-                    <flux:textarea wire:model="career_aspirations" label="Career Progression & Aspirations" rows="4" />
-                </div>
-            @endif
-
-            {{-- Step 6: Essays --}}
-            @if($step === 6)
-                <div class="space-y-6">
-                    <flux:textarea wire:model="essay_one" label="Essay One" description="In 500 words or less, please describe why you believe you should be selected as one of our scholarship recipients." rows="10" />
-                    <flux:textarea wire:model="essay_two" label="Essay Two" description="In 500 words or less, please describe what being a good mentee or mentor means to you." rows="10" />
-
-                    <flux:callout variant="warning" icon="exclamation-triangle">
-                        <flux:callout.heading>Before You Submit</flux:callout.heading>
-                        <flux:callout.text>
-                            Once submitted, you will not be able to edit or delete your application. By clicking "Submit Application" you affirm that all information is complete and truthful. Any misrepresented or falsified entries will result in disqualification.
-                        </flux:callout.text>
-                    </flux:callout>
-                </div>
-            @endif
+                <flux:callout variant="warning" icon="exclamation-triangle">
+                    <flux:callout.heading>Before You Submit</flux:callout.heading>
+                    <flux:callout.text>
+                        Once submitted, you will not be able to edit or delete your application. By clicking "Submit
+                        Application" you affirm that all information is complete and truthful. Any misrepresented or
+                        falsified entries will result in disqualification.
+                    </flux:callout.text>
+                </flux:callout>
+            </div>
+        @endif
 
         <div class="flex justify-between mt-8">
             @if($step > 1)
@@ -347,4 +384,20 @@ new class extends Component {
             @endif
         </div>
     </form>
+    @else
+        <div class="max-w-lg mx-auto py-16 space-y-4 text-center">
+            <flux:heading size="xl">Applications Are Closed</flux:heading>
+            <flux:subheading>
+                @if(now()->isBefore($this->scholarship->opens_at))
+                    Applications for the {{ $this->scholarship->name }} open on
+                    {{ $this->scholarship->opens_at->format('F j, Y \a\t g:i A T') }}.
+                @else
+                    Applications for the {{ $this->scholarship->name }} closed on
+                    {{ $this->scholarship->closes_at->format('F j, Y \a\t g:i A T') }}.
+                    Award announcements will be made on {{ $this->scholarship->award_date->format('F j, Y') }}.
+                @endif
+            </flux:subheading>
+            <flux:button href="{{ route('index') }}" variant="ghost">Return Home</flux:button>
+        </div>
+    @endif
 </div>

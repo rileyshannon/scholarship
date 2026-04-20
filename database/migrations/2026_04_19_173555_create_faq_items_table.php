@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('scholarships', function (Blueprint $table) {
+        Schema::create('faq_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->string('name');
-            $table->timestamp('opens_at');
-            $table->timestamp('closes_at');
-            $table->timestamp('award_date');
-            $table->boolean('is_active')->default(false);
+            $table->string('question');
+            $table->text('answer');
+            $table->string('type')->default('faq'); // 'faq' or 'eligibility'
+            $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
         });
     }
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('scholarships');
+        Schema::dropIfExists('faq_items');
     }
 };

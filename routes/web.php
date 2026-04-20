@@ -18,6 +18,8 @@ Route::middleware(['auth', 'verified', 'is_admin'])->name('admin.')->prefix('adm
     Route::livewire('/applications', 'pages::admin.applications.index')->name('applications.index');
     Route::livewire('/applications/{application}', 'pages::admin.applications.show')->name('applications.show');
     Route::livewire('/users', 'pages::admin.users.index')->name('users.index');
+    Route::livewire('/groups', 'pages::admin.groups.index')->name('groups.index');
+    Route::livewire('/scholarships', 'pages::admin.scholarships.index')->name('scholarships.index');
 });
 
 require __DIR__.'/settings.php';
